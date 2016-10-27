@@ -40,6 +40,7 @@ const map = new GMaps({
 
 GMaps.geolocate({
   success: function (position) {
+    state.center = {lat: position.coords.latitude, lng: position.coords.longitude}
     map.setCenter(position.coords.latitude, position.coords.longitude)
     searchFiles()
   },
@@ -54,6 +55,7 @@ document.getElementById('searchaddress').addEventListener('submit', function (e)
     callback: function (results, status) {
       if (status === 'OK') {
         var latlng = results[0].geometry.location
+        state.center = {lat: latlng.lat(), lng: latlng.lng()}
         map.setCenter(latlng.lat(), latlng.lng())
         searchFiles()
       }
@@ -91,7 +93,7 @@ function onFiles (files) {
 
 function saveOnDatabase (torrent, lat, lng) {
   var doc = {
-    _id: '' + (new Date()).getTime(),
+    _id: (new Date()).getTime().toString(),
     type: 'Feature',
     geometry: {
       type: 'Point',
@@ -104,17 +106,33 @@ function saveOnDatabase (torrent, lat, lng) {
     }
   }
 
-  fetch(CLOUDANT + '/', {
-    method: 'post',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(doc)
+  return new Promise(function (resolve, reject) {
+    GMaps.geocode({
+      location: {lat: lat, lng: lng},
+      callback: function (results, status) {
+        if (status === 'OK') {
+          resolve(results[0].formatted_address)
+        } else {
+          reject()
+        }
+      }
+    })
   })
-  .then(res => {
-    seedMarker(doc)
+  .then(address => {
+    doc.properties.address = address
+
+    return fetch(CLOUDANT + '/', {
+      method: 'post',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(doc)
+    })
   })
+  .then(res =>
+    addSeedMarker(doc)
+  )
   .catch(e => console.log('failed save', e))
 }
 
@@ -135,7 +153,7 @@ function searchFiles () {
       var doc = state.searchresults[f]
       if (state.seeding[doc.properties.magnet]) {
         // we're seeding this, so it is slightly different!
-        seedMarker(doc)
+        addSeedMarker(doc)
       } else {
         // these are results from others.
         map.addMarker({
@@ -143,7 +161,8 @@ function searchFiles () {
           lng: doc.geometry.coordinates[1],
           title: doc.properties.name,
           infoWindow: {
-            content: `${doc.properties.name} <a href="https://instant.io/#${doc.properties.magnet}" onclick="downloadFile('${doc.properties.name}', '${doc.properties.magnet}', ${doc.geometry.coordinates[0]}, ${doc.geometry.coordinates[1]}); return false">download</a><br>files:<ul>
+            content: `${doc.properties.name} ${render_download(doc)}
+              <br>files:<ul>
               ${doc.properties.files.map(f =>
                 `<li>${f.name}: ${(f.length / 1000).toFixed(0)}kb</li>`
               ).join('')}
@@ -153,6 +172,12 @@ function searchFiles () {
       }
     }
   })
+}
+
+window.centerMap = function (lat, lng) {
+  state.center = {lat: lat, lng: lng}
+  map.setCenter(lat, lng)
+  searchFiles()
 }
 
 window.downloadFile = function (name, magnet, lat, lng) {
@@ -214,8 +239,8 @@ function render () {
 
   document.getElementById('nearby').innerHTML = `<h3>Files nearby</h3><ul>
     ${state.searchresults.map(doc =>
-      `<li>${doc.properties.name} <a href="https://instant.io/#${doc.properties.magnet}" target=_blank onclick="downloadFile('${doc.properties.name}', '${doc.properties.magnet}', ${doc.geometry.coordinates[0]}, ${doc.geometry.coordinates[1]}); return false">download</a> from ${doc.geometry.coordinates[0]}, ${doc.geometry.coordinates[1]}</li>`
-    ).join('')}
+      `<li>${doc.properties.name} ${render_download(doc)} at ${render_location(doc)}</li>`
+    ).join('') || `no files found anywhere.`}
   </ul>`
 
   var seedingWithoutLocation = Object.keys(state.seeding)
@@ -238,9 +263,19 @@ function render () {
   }
 }
 
+function render_location (doc) {
+  var address = doc.properties.address ||
+    doc.geometry.coordinates.map(x => x.toFixed(2)).join(', ')
+  return `<a href=# onclick="centerMap(${doc.geometry.coordinates[0]}, ${doc.geometry.coordinates[1]}); return false">${address}</a>`
+}
+
+function render_download (doc) {
+  return `<a href="https://instant.io/#${doc.properties.magnet}" target=_blank onclick="downloadFile('${doc.properties.name}', '${doc.properties.magnet}', ${doc.geometry.coordinates[0]}, ${doc.geometry.coordinates[1]}); return false">download</a>`
+}
+
 
 // helpers
-function seedMarker (doc) {
+function addSeedMarker (doc) {
   map.addMarker({
     lat: doc.geometry.coordinates[0],
     lng: doc.geometry.coordinates[1],
