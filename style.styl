@@ -14,15 +14,6 @@ body
     border 5px #f8283b dashed
     z-index 999
 
-#map
-  width 100%
-  height 300px
-
-#map_context-menu-no-action
-  text-decoration none
-  color inherit
-  cursor default
-
 header
   h2
     float left
@@ -30,6 +21,7 @@ header
   aside
     float left
     width 50%
+    font-size 12px
 
 header + *
   clear both
@@ -39,11 +31,21 @@ header + *
   width 400px
   max-width 100%
 
+#map
+  width 100%
+  height 320px
+
+#map_context-menu-no-action
+  text-decoration none
+  color inherit
+  cursor default
+
 #seeding, #downloading
   min-height 20px
 
 #seeding
   table table td a
+    display block
     border 4px dashed rgba(173, 94, 30)
     padding 5px
     background rgba(173, 94, 30, 0.17)
