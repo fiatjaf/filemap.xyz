@@ -163,7 +163,7 @@ function saveOnDatabase (torrent, lat, lng) {
     properties: {
       magnet: torrent.magnetURI,
       name: torrent.files[0].name + (torrent.files.length > 1
-        ? `and ${torrent.files.length - 1} other files`
+        ? ` and ${torrent.files.length - 1} other files`
         : ''),
       files: torrent.files.map(f => ({name: f.name, length: f.length}))
     }
