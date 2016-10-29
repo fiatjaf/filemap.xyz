@@ -2,3 +2,4 @@
 *.swo
 bundle.*
 node_modules
+cron.log

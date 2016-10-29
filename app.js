@@ -34,17 +34,27 @@ function keepAlive () {
   for (var mgn in state.seeding) {
     var doc = state.seeding[mgn].doc
     if (doc) {
-      var keepAlive = (new Date).getTime() + 5 * 60000
-      if (doc.keepAlive < keepAlive) {
-        doc.keepAlive = keepAlive
+      var ka = (new Date).getTime() + 5 * 60000
+      if (doc.keepAlive < ka) {
+        doc.keepAlive = ka
       }
 
-      fetch(CLOUDANT + `/${doc._id}`, {
-        method: 'put',
+      fetch(CLOUDANT + `/_all_docs?key="${doc._id}"`, {
+        method: 'get',
         headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(doc)
+          'Accept': 'application/json'
+        }
+      })
+      .then(r => r.json())
+      .then(res => {
+        doc._rev = res.rows[0].value.rev
+        fetch(CLOUDANT + `/${doc._id}`, {
+          method: 'put',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(doc)
+        })
       })
     }
   }
@@ -285,6 +295,8 @@ window.downloadFile = function (name, magnet, lat, lng) {
         render()
       }), 200)
     })
+
+    keepAlive()
   })
 }
 
