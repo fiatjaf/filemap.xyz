@@ -6,10 +6,12 @@
   "dependencies": {
     "drag-drop": "^2.12.1",
     "gmaps": "^0.4.24",
+    "hyperx": "^2.0.5",
     "prettier-bytes": "^1.0.3",
     "throttleit": "^1.0.0",
     "thunky": "^1.0.1",
     "upload-element": "^1.0.1",
+    "virtual-dom": "^2.1.1",
     "webtorrent": "^0.97.2",
     "whatwg-fetch": "^1.0.0"
   },

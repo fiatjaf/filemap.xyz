@@ -5,6 +5,9 @@ const dragDrop = require('drag-drop')
 const uploadElement = require('upload-element')
 const prettybytes = require('prettier-bytes')
 const throttle = require('throttleit')
+const vdom = require('virtual-dom')
+const hyperx = require('hyperx')
+const hx = hyperx(vdom.h)
 
 const CLOUDANT = 'https://fiatjaf.cloudant.com/localfiles'
 const TRACKERS = [
@@ -47,7 +50,11 @@ function keepAlive () {
       })
       .then(r => r.json())
       .then(res => {
-        doc._rev = res.rows[0].value.rev
+        if (res.rows[0]) {
+          doc._rev = res.rows[0].value.rev
+        } else {
+          delete doc._rev
+        }
         fetch(CLOUDANT + `/${doc._id}`, {
           method: 'put',
           headers: {
@@ -169,7 +176,7 @@ function saveOnDatabase (torrent, lat, lng) {
         if (status === 'OK') {
           resolve(results[0].formatted_address)
         } else {
-          reject()
+          resolve(`[ ${lat.toFixed(2)}, ${lng.toFixed(2)} ]`)
         }
       }
     })
@@ -225,7 +232,14 @@ function searchFiles () {
                   `<tr><td>${f.name}</td><td>${prettybytes(f.length)}</td></tr>`
                 ).join('')}
               </table>
-              <h6 style="float: right">${render_download(doc)}</h6>`
+              <h6 style="float: right">
+                <a
+                  href="https://instant.io/#${doc.properties.magnet}"
+                  target=_blank
+                  onclick="downloadFile('${doc.properties.name}', '${doc.properties.magnet}', ${doc.geometry.coordinates[0]}, ${doc.geometry.coordinates[1]})(); return false">
+                    Download
+                </a>
+              </h6>`
           }
         })
       }
@@ -234,126 +248,104 @@ function searchFiles () {
 }
 
 window.centerMap = function (lat, lng) {
-  state.center = {lat: lat, lng: lng}
-  map.setCenter(lat, lng)
-  searchFiles()
+  return function (e) {
+    e.preventDefault()
+
+    state.center = {lat: lat, lng: lng}
+    map.setCenter(lat, lng)
+    searchFiles()
+  }
 }
 
 window.downloadFile = function (name, magnet, lat, lng) {
-  map.hideContextMenu()
-  if (state.downloading[magnet] || state.seeding[magnet]) return
+  return function (e) {
+    if (e) e.preventDefault()
 
-  state.downloading[magnet] = {
-    torrent: {},
-    doc: state.searchresults.find(doc => doc.properties.magnet === magnet),
-    info: 'trying to download'
-  }
-  render()
+    map.hideContextMenu()
+    if (state.downloading[magnet] || state.seeding[magnet]) return
 
-  client.add(magnet, function (torrent) {
-    state.downloading[torrent.magnetURI].torrent = torrent
+    state.downloading[magnet] = {
+      torrent: {},
+      doc: state.searchresults.find(doc => doc.properties.magnet === magnet),
+      info: 'trying to download'
+    }
     render()
 
-    torrent.on('warning', e => console.log(e.message))
-    torrent.on('error', e => console.log(e.message))
-
-    torrent.on('download', throttle(function () {
-      if (!state.downloading[torrent.magnetURI]) return
-      state.downloading[torrent.magnetURI].info = downloadingInfo(torrent)
-      render()
-    }), 200)
-    torrent.on('noPeers', function () {
-      if (!state.downloading[torrent.magnetURI]) return
-      state.downloading[torrent.magnetURI].info = `couldn't find this file on the network. the person who was seeding it has probably closed the page or is offline.`
-      render()
-    })
-    torrent.on('done', function () {
-      if (!state.downloading[torrent.magnetURI]) return
-      state.seeding[torrent.magnetURI] = {
-        torrent: torrent,
-        mine: false,
-        doc: state.downloading[torrent.magnetURI].doc,
-        info: 'serving the file'
-      }
-      delete state.downloading[torrent.magnetURI]
+    client.add(magnet, function (torrent) {
+      state.downloading[torrent.magnetURI].torrent = torrent
       render()
 
-      torrent.files.forEach(function (file) {
-        file.getBlobURL(function (err, url) {
-          if (err) {
-            file.blobURLError = err
-            return
-          }
-          file.blobURL = url
-          render()
-        })
-      })
+      torrent.on('warning', e => console.log(e.message))
+      torrent.on('error', e => console.log(e.message))
 
-      torrent.on('upload', throttle(function () {
-        if (!state.seeding[torrent.magnetURI]) return
-        state.seeding[torrent.magnetURI].info = seedingInfo(torrent)
+      torrent.on('download', throttle(function () {
+        if (!state.downloading[torrent.magnetURI]) return
+        state.downloading[torrent.magnetURI].info = downloadingInfo(torrent)
         render()
       }), 200)
-    })
+      torrent.on('noPeers', function () {
+        if (!state.downloading[torrent.magnetURI]) return
+        state.downloading[torrent.magnetURI].info = `couldn't find this file on the network. the person who was seeding it has probably closed the page or is offline.`
+        render()
+      })
+      torrent.on('done', function () {
+        if (!state.downloading[torrent.magnetURI]) return
+        state.seeding[torrent.magnetURI] = {
+          torrent: torrent,
+          mine: false,
+          doc: state.downloading[torrent.magnetURI].doc,
+          info: 'serving the file'
+        }
+        delete state.downloading[torrent.magnetURI]
+        render()
 
-    keepAlive()
-  })
+        torrent.files.forEach(function (file) {
+          file.getBlobURL(function (err, url) {
+            if (err) {
+              file.blobURLError = err
+              return
+            }
+            file.blobURL = url
+            render()
+          })
+        })
+
+        torrent.on('upload', throttle(function () {
+          if (!state.seeding[torrent.magnetURI]) return
+          state.seeding[torrent.magnetURI].info = seedingInfo(torrent)
+          render()
+        }), 200)
+      })
+
+      keepAlive()
+    })
+  }
 }
 
 window.placeOnMiddle = function (mgn) {
-  addToMap(state.seeding[mgn].torrent, state.center.lat, state.center.lng)
+  return function (e) {
+    e.preventDefault()
+    addToMap(state.seeding[mgn].torrent, state.center.lat, state.center.lng)
+  }
 }
 
 
 // state management
+var trees = render_trees()
+var nodes = {
+  downloading: vdom.create(trees.downloading),
+  seeding: vdom.create(trees.seeding),
+  nearby: vdom.create(trees.nearby)
+}
+document.getElementById('downloading').appendChild(nodes.downloading)
+document.getElementById('seeding').appendChild(nodes.seeding)
+document.getElementById('nearby').appendChild(nodes.nearby)
 function render () {
-  document.getElementById('downloading').innerHTML = Object.keys(state.downloading).length
-    ? `<h3>Downloading</h3><table>
-        ${Object.keys(state.downloading).map(mgn => state.downloading[mgn]).map(data =>
-          `<tr>
-            <td>${data.doc.properties.name}</td>
-            <td>${data.info}</td>
-          </tr>`
-        ).join('')}
-      </table>`
-    : ''
-
-  document.getElementById('seeding').innerHTML = Object.keys(state.seeding).length
-    ? `<h3>Seeding</h3><table>
-        ${Object.keys(state.seeding).map(mgn => state.seeding[mgn]).map(data =>
-          `<tr>
-            ${data.mine && data.doc
-              ? `<td>${render_location(data.doc)}</td>`
-              : data.mine
-                ? `<td><b>right-click on the map to share this somewhere</b> or <a href=# onclick="placeOnMiddle('${data.torrent.magnetURI}'); return false">click here</a> to place it on the middle of the map</td>`
-                : '<td>Download complete</td>'
-            }
-            <td>
-              <table>${data.torrent.files.map(f => `<tr>
-                <td>${f.name}</td>
-                <td>${f.blobURL
-                  ? f.blobURLError
-                    ? `download error: ${f.blobURLError.message}`
-                    : `<a href=${f.blobURL} download="${f.name}">Save to computer</a>`
-                  : `${prettybytes(f.length)}`
-                }</td>
-              </tr>`).join('')}</table>
-            </td>
-            <td>${data.info}</td>
-          </tr>`
-        ).join('')}
-      </table>`
-    : ''
-
-  document.getElementById('nearby').innerHTML = `<h3>Files nearby</h3><table>
-    ${state.searchresults.map(doc =>
-      `<tr>
-        <td>${doc.properties.name}</td>
-        <td>${render_download(doc)}</td>
-        <td>at ${render_location(doc)}</td>
-      </tr>`
-    ).join('') || `no files found anywhere.`}
-  </table>`
+  var newTrees = render_trees()
+  vdom.patch(nodes.downloading, vdom.diff(trees.downloading, newTrees.downloading))
+  vdom.patch(nodes.seeding, vdom.diff(trees.seeding, newTrees.seeding))
+  vdom.patch(nodes.nearby, vdom.diff(trees.nearby, newTrees.nearby))
+  trees = newTrees
 
   var seedingWithoutLocation = Object.keys(state.seeding)
     .filter(mgn => state.seeding[mgn].mine && state.seeding[mgn].doc === null)
@@ -384,23 +376,75 @@ function render () {
   }
 }
 
+function render_trees () {
+  return {
+    downloading: Object.keys(state.downloading).length
+      ? hx`<div><h3>Downloading</h3><table>
+          ${Object.keys(state.downloading).map(mgn => state.downloading[mgn]).map(data =>
+            hx`<tr>
+              <td>${data.doc.properties.name}</td>
+              <td>${data.info}</td>
+            </tr>`
+          )}
+        </table></div>`
+      : hx`<div></div>`,
+    seeding: Object.keys(state.seeding).length
+      ? hx`<div><h3>Seeding</h3><table>
+          ${Object.keys(state.seeding).map(mgn => state.seeding[mgn]).map(data =>
+            hx`<tr>
+              ${data.mine && data.doc
+                ? hx`<td>${render_location(data.doc)}</td>`
+                : data.mine
+                  ? hx`<td><b>right-click on the map to share this somewhere</b> or <a href=# onclick=${window.placeOnMiddle(data.torrent.magnetURI)}>click here</a> to place it on the middle of the map</td>`
+                  : hx`<td>Download complete</td>`
+              }
+              <td>
+                <table>${data.torrent.files.map(f => hx`<tr>
+                  <td>${f.name}</td>
+                  <td>${f.blobURL
+                    ? f.blobURLError
+                      ? hx`<span>download error: ${f.blobURLError.message}</span>`
+                      : hx`<a href=${f.blobURL} download="${f.name}">Save to computer</a>`
+                    : hx`<span>${prettybytes(f.length)}</span>`
+                  }</td>
+                </tr>`)}</table>
+              </td>
+              <td>${data.info}</td>
+            </tr>`
+          )}
+        </table></div>`
+      : hx`<div></div>`,
+    nearby: hx`<div><h3>Files nearby</h3><table>
+      ${state.searchresults.length
+        ? state.searchresults.map(doc =>
+          hx`<tr>
+            <td>${doc.properties.name}</td>
+            <td>${render_download(doc)}</td>
+            <td>at ${render_location(doc)}</td>
+          </tr>`
+        )
+        : hx`<div>no files found anywhere.</div>`
+      }
+    </table></div>`
+  }
+}
+
 function render_location (doc) {
   var address = doc.properties.address ||
     doc.geometry.coordinates.map(x => x.toFixed(2)).join(', ')
-  return `<a href=# onclick="centerMap(${doc.geometry.coordinates[0]}, ${doc.geometry.coordinates[1]}); return false">${address}</a>`
+  return hx`<a href=# onclick=${window.centerMap(doc.geometry.coordinates, doc.geometry.coordinates[1])}>${address}</a>`
 }
 
 function render_download (doc) {
   if (state.seeding[doc.properties.magnet]) {
-    return 'Downloaded'
+    return hx`<span>Downloaded</span>`
   } else if (state.downloading[doc.properties.magnet]) {
-    return 'Downloading'
+    return hx`<span>Downloading</span>`
   } else {
-    return `<a
+    return hx`<a
       href="https://instant.io/#${doc.properties.magnet}"
       target=_blank
-      onclick="downloadFile('${doc.properties.name}', '${doc.properties.magnet}', ${doc.geometry.coordinates[0]}, ${doc.geometry.coordinates[1]}); return false"
-    >Download</a>`
+      onclick=${window.downloadFile(doc.properties.name, doc.properties.magnet, doc.geometry.coordinates[0], doc.geometry.coordinates[1])}>Download</a>`
   }
 }
 
@@ -427,16 +471,16 @@ function addSeedMarker (doc) {
 }
 
 function seedingInfo (torrent) {
-  return `
+  return hx`<span>
     <b>peers: </b> ${torrent.numPeers},
     <b>uploaded: </b> ${prettybytes(torrent.uploaded)},
-  `
+  <span>`
 }
 
 function downloadingInfo (torrent) {
-  return `
+  return hx`<span>
     <b>peers: </b> ${torrent.numPeers},
     <b>downloaded: </b> ${prettybytes(torrent.downloaded)},
-    <b>progress: </b> ${prettybytes(torrent.progress)}%
-  `
+    <b>progress: </b> ${(torrent.progress * 100).toFixed(1)}%
+  </span>`
 }
