@@ -34,37 +34,51 @@ client.on('error', e => console.log(e.message))
 
 // every 4 minutes send keepAlive notes to the database
 function keepAlive () {
+  const ka = (new Date).getTime() + 5 * 60000
+  var willupdate = []
+
   for (var mgn in state.seeding) {
     var doc = state.seeding[mgn].doc
     if (doc) {
-      var ka = (new Date).getTime() + 5 * 60000
+      willupdate.push(doc)
+    }
+  }
+
+  fetch(CLOUDANT + `/_all_docs?keys=${JSON.stringify(willupdate.map(d => d._id))}`, {
+    method: 'get',
+    headers: {
+      'Accept': 'application/json'
+    }
+  })
+  .then(r => r.json())
+  .then(res => {
+    res.rows.forEach((row, i) => {
+      var doc = willupdate[i]
       if (doc.keepAlive < ka) {
         doc.keepAlive = ka
       }
 
-      fetch(CLOUDANT + `/_all_docs?key="${doc._id}"`, {
-        method: 'get',
-        headers: {
-          'Accept': 'application/json'
-        }
-      })
-      .then(r => r.json())
-      .then(res => {
-        if (res.rows[0]) {
-          doc._rev = res.rows[0].value.rev
+      if (row.value) {
+        if (!row.value.deleted) {
+          doc._rev = row.value.rev
         } else {
+          console.log(`during update of ${doc._id} found it was deleted, recreating it`)
           delete doc._rev
         }
-        fetch(CLOUDANT + `/${doc._id}`, {
-          method: 'put',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(doc)
-        })
+      } else {
+        console.log(`was updating ${doc._id}, but it was not found on the database.`)
+        return
+      }
+
+      fetch(CLOUDANT + `/${doc._id}`, {
+        method: 'put',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(doc)
       })
-    }
-  }
+    })
+  })
 
   setTimeout(keepAlive, 4 * 60000)
 }
@@ -76,6 +90,7 @@ const map = new GMaps({
   div: '#map',
   lat: state.center.lat,
   lng: state.center.lng,
+  zoom: 16,
   dragend: function (e) {
     state.center = {lat: e.center.lat(), lng: e.center.lng()}
     searchFiles()
