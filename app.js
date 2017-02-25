@@ -34,6 +34,7 @@ client.on('error', e => console.log(e.message))
 
 // every 4 minutes send keepAlive notes to the database
 function keepAlive () {
+  window.tc && window.tc(1)
   const ka = (new Date).getTime() + 5 * 60000
   var willupdate = []
 
