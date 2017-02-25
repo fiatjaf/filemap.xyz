@@ -1,0 +1,70 @@
+body {
+  width: 1000px;
+  max-width: 100%;
+  margin: auto;
+}
+body.drag::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(248,40,59,0.3);
+  border: 5px #f8283b dashed;
+  z-index: 999;
+}
+header h2 {
+  float: left;
+  width: 50%;
+}
+header aside {
+  float: left;
+  width: 50%;
+  font-size: 12px;
+}
+header + * {
+  clear: both;
+}
+#searchaddress {
+  margin: 7px auto;
+  width: 400px;
+  max-width: 100%;
+}
+#map {
+  width: 100%;
+  height: 320px;
+}
+#map_context-menu-no-action {
+  text-decoration: none;
+  color: inherit;
+  cursor: default;
+}
+#seeding,
+#downloading {
+  min-height: 20px;
+}
+#seeding table table td a {
+  display: block;
+  text-align: center;
+  border: 4px dashed #ad5e1e;
+  padding: 5px;
+  background: rgba(173,94,30,0.17);
+}
+#seeding table table td a:hover {
+  background: rgba(173,94,30,0.47);
+}
+#nearby {
+  min-height: 240px;
+}
+ul {
+  padding-left: 26px;
+  list-style: square;
+}
+table {
+  width: 100%;
+}
+table table {
+  margin: 0;
+  border: none;
+}
