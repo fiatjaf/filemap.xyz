@@ -1,8 +1,9 @@
-/* global L, alert */
+/* global L, google, alert */
 
 const firebase = require('firebase')
 const GeoFire = require('geofire')
 const places = require('places.js')
+const throttle = require('throttleit')
 const Dropzone = require('dropzone')
 Dropzone.autoDiscover = false
 
@@ -68,9 +69,12 @@ function handleKeyEntered (key, [lat, lng], distance) {
   filekeys.child(key).on('value', snap => {
     let {name, files} = snap.val()
 
-    marker.bindTooltip(name, {
-      opacity: 0.6
-    }).openTooltip()
+    if (name) {
+      marker.bindTooltip(name, {
+        offset: [0, -7],
+        opacity: 0.6
+      }).openTooltip()
+    }
 
     marker.bindPopup(`
   <b>${name}</b>
@@ -113,6 +117,10 @@ function handleMapMove () {
   //   fillOpacity: 0.3,
   //   radius: zoomToRadius(zoom) * 1000
   // }).addTo(map)
+
+  if (!targetPos) {
+    updateTargetAddress({lat, lng})
+  }
 }
 
 function zoomToRadius (z) {
@@ -146,9 +154,11 @@ uploadForm.addEventListener('submit', e => {
 
   let ref = filekeys.push({
     name: e.target.name.value,
+    address: address.value,
     files: files
   }, () => {
     e.target.name.value = ''
+    address.value = ''
     files = {}
     dz.removeAllFiles()
     targetMarker.remove()
@@ -178,11 +188,28 @@ map.on('click', e => {
   }).addTo(map)
 
   targetMarker.bindTooltip('Your files will be added to this place', {
-    offset: [8, -17],
+    offset: [0, -17],
     permanent: true,
     opacity: 0.9
   }).openTooltip()
+
+  updateTargetAddress({lat, lng})
 })
+
+var address = document.getElementById('address')
+
+const geocoder = new google.maps.Geocoder()
+const updateTargetAddress = throttle(function ({lat, lng}) {
+  geocoder.geocode({location: {lat, lng}}, (results, status) => {
+    if (status === 'OK') {
+      if (results[0]) {
+        address.value = results[0].formatted_address
+        return
+      }
+    }
+    address.value = `lat: ${lat}, lng: ${lng}`
+  })
+}, 700)
 
 var keysByDropzoneUUIDs = {}
 var files = {}
@@ -202,5 +229,6 @@ dz.on('success', e => {
     keysByDropzoneUUIDs[e.upload.uuid] = res.key
   } else {
     alert(e.xhr.responseText)
+    dz.removeFile(e.upload)
   }
 })

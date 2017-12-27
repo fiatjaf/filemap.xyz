@@ -18,19 +18,32 @@
     </form>
     <div id="map"></div>
     <form id="upload">
-      <div class="field">
-        <label>Files: </label>
-        <div id="files" class="dropzone"></div>
-        <p class="help">Files that will be placed in the map.</p>
-      </div>
-      <div class="field">
-        <label for="name">Name: </label>
-        <div class="control">
-          <input class="input" id="name" name=name>
+      <div class="columns">
+        <div class="column">
+          <div class="field">
+            <label>Files: </label>
+            <div id="files" class="dropzone"></div>
+            <p class="help">Files that will be placed in the map.</p>
+          </div>
         </div>
-        <p class="help">An optional name to identify your files on the map.</p>
+        <div class="column">
+          <div class="field">
+            <label for="name">Name: </label>
+            <div class="control">
+              <input class="input" id="name" name=name>
+            </div>
+            <p class="help">An optional name to identify your files on the map.</p>
+          </div>
+          <div class="field">
+            <label for="address">Address: </label>
+            <div class="control">
+              <input class="input" id="address" disabled value>
+            </div>
+            <p class="help">Select a place to upload your files to by clicking on the map.</p>
+          </div>
+          <button class="button is-primary">Save</button>
+        </div>
       </div>
-      <button class="button is-primary">Save</button>
     </div>
   </div>
 </body>
