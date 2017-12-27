@@ -7,6 +7,8 @@ const throttle = require('throttleit')
 const Dropzone = require('dropzone')
 Dropzone.autoDiscover = false
 
+const { fileTypeIcon } = require('./helpers')
+
 firebase.initializeApp({
   apiKey: 'AIzaSyBMMiudi0y6Xnyy4UZW8l7y2RHvFKDjt1c',
   authDomain: 'numeric-analogy-147613.firebaseapp.com',
@@ -79,7 +81,11 @@ function handleKeyEntered (key, [lat, lng], distance) {
     marker.bindPopup(`
   <b>${name}</b>
   <ul>${Object.keys(files).map(key =>
-    `<li><a href="https://file.io/${key}">${files[key]}</a></li>`
+    `<li>
+      <i class="fa ${fileTypeIcon(files[key])}"></i>
+      &nbsp;
+      <a href="https://file.io/${key}">${files[key]}</a>
+     </li>`
   ).join('')}</ul>
     `)
   })
