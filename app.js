@@ -73,7 +73,7 @@ function handleKeyEntered (key, [lat, lng], distance) {
       marker.bindTooltip(name, {
         offset: [0, -7],
         opacity: 0.6
-      }).openTooltip()
+      })
     }
 
     marker.bindPopup(`
@@ -124,7 +124,7 @@ function handleMapMove () {
 }
 
 function zoomToRadius (z) {
-  return 78 * 2 ** (9 - z)
+  return 110 * 2 ** (9 - z)
 }
 
 
