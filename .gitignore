@@ -1,0 +1,8 @@
+*.swp
+*.swo
+node_modules
+elm-stuff
+bower_components
+bundle.*
+elm.js
+browserify-cache.json

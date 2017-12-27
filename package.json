@@ -1,0 +1,30 @@
+{
+  "name": "localfiles",
+  "version": "0.0.0",
+  "scripts": {
+    "watch-scss": "ls *.scss | entr fish -c 'node-sass --output-style compressed --source-map true style.scss > bundle.css; and echo 'done!''",
+    "build-scss": "node-sass --output-style compressed --source-map true style.scss > bundle.css",
+    "watch-js": "find -name \"*.js\" ! -name \"bundle.js\" ! -path \"*node_modules*\" | entr browserifyinc -vd app.js -o bundle.js",
+    "build-js": "browserify app.js -o -p tinyify bundle.js"
+  },
+  "browserify": {
+    "transforms": [
+      "bubleify"
+    ]
+  },
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.17.1",
+    "dropzone": "^5.2.0",
+    "firebase": "^4.8.1",
+    "geofire": "^4.1.2",
+    "places.js": "^1.4.18"
+  },
+  "devDependencies": {
+    "browserify": "^14.5.0",
+    "browserify-incremental": "^3.1.1",
+    "bubleify": "^1.1.0",
+    "bulma": "^0.6.1",
+    "tinyify": "^2.4.0"
+  }
+}

@@ -1,0 +1,38 @@
+@import 'node_modules/bulma/bulma.sass';
+
+* { box-sizing: border-box; }
+
+.button {
+  font-size: 1.1em;
+}
+
+#main {
+  width: 804px;
+  max-width: 100%;
+  margin: 37px auto;
+}
+
+#search {
+  z-index: 7;
+  margin-bottom: 23px;
+
+  & > .algolia-places {
+    width: 87%;
+  }
+}
+
+#map {
+  z-index: 5;
+  min-height: 400px;
+  height: calc(50vh + 200px);
+  margin-bottom: 23px;
+}
+
+#files {
+  width: 100%;
+  border-color: #dbdbdb;
+}
+
+#upload {
+
+}

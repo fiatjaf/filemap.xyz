@@ -1,0 +1,37 @@
+<!doctype html>
+
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.2.0/min/dropzone.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.2.0/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="bundle.css">
+<title>Localfiles</title>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBMMiudi0y6Xnyy4UZW8l7y2RHvFKDjt1c&libraries=places"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.2.0/leaflet.js"></script>
+<script src="https://cdn.rawgit.com/Leaflet/Leaflet.Icon.Glyph/gh-pages/Leaflet.Icon.Glyph.js"></script>
+<body>
+  <div id="main">
+    <form id="search">
+      <input>
+      <button class="button is-info">Search</button>
+    </form>
+    <div id="map"></div>
+    <form id="upload">
+      <div class="field">
+        <label>Files: </label>
+        <div id="files" class="dropzone"></div>
+        <p class="help">Files that will be placed in the map.</p>
+      </div>
+      <div class="field">
+        <label for="name">Name: </label>
+        <div class="control">
+          <input class="input" id="name" name=name>
+        </div>
+        <p class="help">An optional name to identify your files on the map.</p>
+      </div>
+      <button class="button is-primary">Save</button>
+    </div>
+  </div>
+</body>
+<script src="bundle.js"></script>
