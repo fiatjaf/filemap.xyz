@@ -126,10 +126,11 @@ function handlePasswordEntered (e) {
   let w = SimpleEncryptor(password)
 
   var decryptedfiles = {}
-  for (let enck in files) {
+  for (let eenck in files) {
+    let enck = decodeURIComponent(eenck)
     try {
       let k = w.decrypt(enck)
-      let v = w.decrypt(files[enck])
+      let v = w.decrypt(files[eenck])
       decryptedfiles[k] = v
       if (!k || !v) {
         throw new Error(`couldn't decrypt ${enck} / ${files[enck]}.`)
@@ -249,9 +250,11 @@ uploadForm.addEventListener('submit', e => {
     let w = SimpleEncryptor(password)
     var encryptedfiledata = {}
     for (let k in files) {
-      encryptedfiledata[w.encrypt(k)] = w.encrypt(files[k])
+      let enck = w.encrypt(k)
+      let encv = w.encrypt(files[k])
+      let eenck = encodeURIComponent(enck)
+      encryptedfiledata[eenck] = encv
     }
-    console.log(encryptedfiledata)
     files = encryptedfiledata
   }
 
