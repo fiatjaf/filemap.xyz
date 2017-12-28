@@ -2,22 +2,40 @@
 
 * { box-sizing: border-box; }
 
-.button {
-  font-size: 1.1em;
+html {
+  background-color: #CBE49F;
+}
+
+nav {
+  font-size: 1.3em;
 }
 
 #main {
-  width: 804px;
-  max-width: 100%;
+  width: 1312px;
+  max-width: 96%;
   margin: 37px auto;
+
+  * {
+    font-size: 107%;
+  }
 }
 
 #search {
   z-index: 7;
   margin-bottom: 23px;
+  text-align: center;
+
+  .button {
+    font-size: 1.5em;
+  }
 
   & > .algolia-places {
-    width: 87%;
+    width: 88%;
+    height: 60px;
+
+    & > * {
+      height: 100%;
+    }
   }
 }
 
@@ -26,6 +44,10 @@
   min-height: 400px;
   height: calc(50vh + 200px);
   margin-bottom: 23px;
+
+  .leaflet-control-attribution {
+    font-size: 75%;
+  }
 }
 
 #files {
@@ -35,4 +57,16 @@
 
 #upload {
 
+}
+
+footer {
+  margin-top: 44px;
+  padding: 23px;
+  text-align: center;
+  background-color: #696464;
+  color: white;
+
+  a {
+    color: #c6cdda;
+  }
 }

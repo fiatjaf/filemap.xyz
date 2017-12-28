@@ -6,11 +6,19 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.2.0/leaflet.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="bundle.css">
-<title>Localfiles</title>
+<title>filemap.xyz -- share files in the world map!</title>
+<meta name="description" content="Filemap allows you to place files in global map in order to share them with friends. No more URL sharing or memorizing.">
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBMMiudi0y6Xnyy4UZW8l7y2RHvFKDjt1c&libraries=places"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.2.0/leaflet.js"></script>
 <script src="https://cdn.rawgit.com/Leaflet/Leaflet.Icon.Glyph/gh-pages/Leaflet.Icon.Glyph.js"></script>
 <body>
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item">
+        filemap.xyz
+      </a>
+    </div>
+  </nav>
   <div id="main">
     <form id="search">
       <input>
@@ -46,5 +54,12 @@
       </div>
     </div>
   </div>
+  <footer>
+    <div class="container">
+      <p><b>filemap.xyz</b> written by <a href="https://fiatjaf.alhur.es/" target="_blank">fiatjaf</a>.</p>
+      <p>Powered by <a href="https://file.io" target="_blank">file.io</a>, <a href="http://www.openstreetmap.org/" target="_blank">OpenStreetMap</a>, <a href="https://mapzen.com/" target="_blank">Mapzen</a>, <a href="http://leafletjs.com" target="_blank">Leaflet</a>, <a href="https://firebase.google.com/" target="_blank">Firebase</a>, <a href="https://maps.google.com" target="_blank">Google Maps</a>, <a href="https://community.algolia.com/places/" target="_blank">Algolia</a> and <a href="https://bulma.io/" target="_blank">Bulma</a>.</p>
+      <p>The source code is <a href="https://github.com/fiatjaf/filemap.xyz" target="_blank">available on GitHub</a>.</p>
+    </div>
+  </footer>
 </body>
 <script src="bundle.js"></script>
