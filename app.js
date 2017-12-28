@@ -161,7 +161,8 @@ uploadForm.addEventListener('submit', e => {
   let ref = filekeys.push({
     name: e.target.name.value,
     address: address.value,
-    files: files
+    files: files,
+    timestamp: Date.now() / 1000
   }, () => {
     e.target.name.value = ''
     address.value = ''
