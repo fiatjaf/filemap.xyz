@@ -17,13 +17,42 @@
 <body>
   <nav class="navbar">
     <div class="navbar-brand">
-      <a class="navbar-item">
+      <span class="navbar-item">
         <img src="icon.png">
         &nbsp;
         filemap.xyz
-      </a>
+      </span>
+      <button class="button navbar-burger">
+        <a class="enable-modal">How does it work?</a>
+      </button>
+    </div>
+    <div class="navbar-menu is-active">
+      <div class="navbar-start">
+        <span class="navbar-item">A simple way to share files.</span>
+      </div>
+      <div class="navbar-end">
+        <a class="navbar-item enable-modal">How does it work?</a>
+      </div>
     </div>
   </nav>
+  <div id="modal" class="modal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">How does it work?</p>
+        <button class="delete" aria-label="close"></button>
+      </header>
+      <section class="modal-card-body">
+        <p>When you select a file, it is uploaded to <a href="https://file.io/" target="_blank">file.io</a>, which will store it for <b>14 days</b>. You can upload any number of files.</p>
+        <p>Then, when you select an (optional) <b>identifier name</b> and a <b>place on the map</b> for your files, you can save them on the map. Next, you only have to tell the receiving party where in the world map the files are and he can find them there.</p>
+        <p>To prevent other visitors from carelessly downloading your files, you can optionally set a <b>password</b>. Anything simple will prevent most people from trying to view your files. The password will be used to encrypt the file key that is given by <a href="https://file.io/" target="_blank">file.io</a> and stored in the filemap.</p>
+        <p>After <b>13 days</b> your files will be erased from the filemap.</p>
+      </section>
+      <footer class="modal-card-foot">
+        <button class="button" aria-label="close">Close</button>
+      </footer>
+    </div>
+  </div>
   <div id="main">
     <input id="search" placeholder="Search for a location or address here.">
     <div id="map"></div>

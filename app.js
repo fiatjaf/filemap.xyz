@@ -363,3 +363,25 @@ dz.on('success', e => {
     dz.removeFile(e.upload)
   }
 })
+
+
+// MODAL
+
+
+let modal = document.getElementById('modal')
+
+let openers = document.querySelectorAll('.enable-modal')
+for (let i = 0; i < openers.length; i++) {
+  openers[i].onclick = e => {
+    e.preventDefault()
+    modal.classList.add('is-active')
+  }
+}
+
+let closers = modal.querySelectorAll('[aria-label="close"]')
+for (let i = 0; i < closers.length; i++) {
+  closers[i].onclick = e => {
+    e.preventDefault()
+    modal.classList.remove('is-active')
+  }
+}

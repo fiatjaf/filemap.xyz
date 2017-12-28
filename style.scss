@@ -32,6 +32,19 @@ nav {
 
 }
 
+#modal {
+  text-align: justify;
+  font-size: 120%;
+
+  p {
+    margin: 7px auto;
+  }
+
+  footer {
+    text-align: right;
+  }
+}
+
 #main {
   width: 1312px;
   max-width: 96%;
@@ -81,7 +94,7 @@ nav {
   }
 }
 
-footer {
+body > footer {
   margin-top: 44px;
   padding: 23px;
   text-align: center;
