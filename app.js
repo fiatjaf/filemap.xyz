@@ -37,7 +37,7 @@ var map = L.map('map').setView([lat, lng], zoom)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
   maxZoom: 18,
-  minZoom: 5,
+  minZoom: 12,
   id: 'osm.tiles'
 }).addTo(map)
 
