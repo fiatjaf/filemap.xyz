@@ -1,13 +1,15 @@
-/* global L, google, alert */
+/* global L, notie, google, alert */
 
 const firebase = require('firebase')
 const GeoFire = require('geofire')
 const places = require('places.js')
 const throttle = require('throttleit')
+const SimpleEncryptor = require('simple-encryptor')
 const Dropzone = require('dropzone')
 Dropzone.autoDiscover = false
 
 const { fileTypeIcon } = require('./helpers')
+const SALT = 'a stupid salt just to please the lib'
 
 firebase.initializeApp({
   apiKey: 'AIzaSyBMMiudi0y6Xnyy4UZW8l7y2RHvFKDjt1c',
@@ -69,7 +71,10 @@ function handleKeyEntered (key, [lat, lng], distance) {
       return
     }
 
-    let {name, files} = value
+    let {name, files, encrypted} = value
+
+    keysInRange[key].files = files
+    keysInRange[key].name = name
 
     if (name) {
       marker.bindTooltip(name, {
@@ -78,16 +83,25 @@ function handleKeyEntered (key, [lat, lng], distance) {
       })
     }
 
-    marker.bindPopup(`
-  <b>${name}</b>
-  <ul>${Object.keys(files).map(key =>
-    `<li>
-      <i class="fa ${fileTypeIcon(files[key])}"></i>
-      &nbsp;
-      <a href="https://file.io/${key}">${files[key]}</a>
-     </li>`
-  ).join('')}</ul>
-    `)
+    if (encrypted) {
+      marker.bindPopup(`
+  <h6 class="subtitle is-6">${name}</h6>
+  <form class="enter-password">
+    <label for="p-${key}">Password:</label>
+    <div class="field has-addons">
+      <div class="control">
+        <input id="p-${key}" name="password" class="input">
+      </div>
+      <div class="control">
+        <button class="button is-primary">Ok</button>
+      </div>
+    </div>
+    <span class="help">These files are protected by a password.</span>
+  </form>
+      `)
+    } else {
+      attachPlainTextFilesPopup(marker, name, files)
+    }
   })
 
   keysInRange[key] = {
@@ -97,6 +111,57 @@ function handleKeyEntered (key, [lat, lng], distance) {
     marker,
     handler
   }
+}
+
+document.querySelector('.leaflet-popup-pane')
+  .addEventListener('submit', handlePasswordEntered)
+
+function handlePasswordEntered (e) {
+  e.preventDefault()
+
+  let key = e.target.password.id.slice(2)
+  let { marker, name, files } = keysInRange[key]
+
+  let password = e.target.password.value + SALT
+  let w = SimpleEncryptor(password)
+
+  var decryptedfiles = {}
+  for (let enck in files) {
+    try {
+      let k = w.decrypt(enck)
+      let v = w.decrypt(files[enck])
+      decryptedfiles[k] = v
+      if (!k || !v) {
+        throw new Error(`couldn't decrypt ${enck} / ${files[enck]}.`)
+      }
+    } catch (e) {
+      notie.alert({
+        type: 'warning',
+        text: 'Wrong password!'
+      })
+      return false
+    }
+  }
+  notie.alert({
+    type: 'success',
+    text: 'Correct password!'
+  })
+
+  attachPlainTextFilesPopup(marker, name, decryptedfiles)
+  return false
+}
+
+function attachPlainTextFilesPopup (marker, name, files) {
+  marker.bindPopup(`
+  <h6 class="subtitle is-6">${name}</h6>
+  <ul>${Object.keys(files).map(key =>
+    `<li>
+      <i class="fa ${fileTypeIcon(files[key])}"></i>
+      &nbsp;
+      <a href="https://file.io/${key}">${files[key]}</a>
+     </li>`
+  ).join('')}</ul>
+  `)
 }
 
 function handleKeyExited (key) {
@@ -170,18 +235,45 @@ let uploadForm = document.getElementById('upload')
 uploadForm.addEventListener('submit', e => {
   e.preventDefault()
 
+  let nfiles = Object.keys(files).length
+  if (nfiles === 0) {
+    notie.alert({
+      type: 'info',
+      text: 'Please upload at least one file before saving a place in the map.'
+    })
+    return
+  }
+
+  let password = e.target.password.value.trim() + SALT
+  if (password) {
+    let w = SimpleEncryptor(password)
+    var encryptedfiledata = {}
+    for (let k in files) {
+      encryptedfiledata[w.encrypt(k)] = w.encrypt(files[k])
+    }
+    console.log(encryptedfiledata)
+    files = encryptedfiledata
+  }
+
   let ref = filekeys.push({
     name: e.target.name.value,
     address: address.value,
     files: files,
-    timestamp: Date.now() / 1000
+    timestamp: Date.now() / 1000,
+    encrypted: !!password
   }, () => {
     e.target.name.value = ''
+    e.target.password.value = ''
     address.value = ''
     files = {}
     dz.removeAllFiles()
     targetMarker.remove()
     targetPos = null
+
+    notie.alert({
+      type: 'success',
+      text: `${nfiles} file${nfiles === 1 ? '' : 's'} saved!`
+    })
   })
 
   let {lat, lng} = targetPos || map.getCenter()

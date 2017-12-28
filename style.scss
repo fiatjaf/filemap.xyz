@@ -1,9 +1,27 @@
+$size-1: 3.7rem;
+$size-2: 3rem;
+$size-3: 2.5rem;
+$size-4: 2rem;
+$size-5: 1.5rem;
+$size-6: 1.25rem;
+$size-7: 1rem;
+
 @import 'node_modules/bulma/bulma.sass';
- @import url('https://fonts.googleapis.com/css?family=Mukta+Malar');
+@import url('https://fonts.googleapis.com/css?family=Mukta+Malar');
 
 * {
   box-sizing: border-box;
   font-family: 'Mukta Malar', sans-serif;
+}
+
+.subtitle:not(:last-child) {
+  margin-bottom: 0.7rem;
+}
+
+li {
+  a, i {
+    font-size: 140%;
+  }
 }
 
 html {
@@ -11,17 +29,13 @@ html {
 }
 
 nav {
-  font-size: 1.3em;
+
 }
 
 #main {
   width: 1312px;
   max-width: 96%;
   margin: 37px auto;
-
-  * {
-    font-size: 107%;
-  }
 }
 
 #search {
@@ -77,4 +91,8 @@ footer {
   a {
     color: #c6cdda;
   }
+}
+
+.notie-alert {
+  z-index: 10;
 }
