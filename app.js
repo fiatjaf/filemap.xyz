@@ -62,15 +62,14 @@ function handleKeyEntered (key, [lat, lng], distance) {
     riseOnHover: true
   }).addTo(map)
 
-  keysInRange[key] = {
-    distance,
-    lat,
-    lng,
-    marker
-  }
+  let handler = filekeys.child(key).on('value', snap => {
+    let value = snap.val()
+    if (!value) {
+      handleKeyExited(key)
+      return
+    }
 
-  filekeys.child(key).on('value', snap => {
-    let {name, files} = snap.val()
+    let {name, files} = value
 
     if (name) {
       marker.bindTooltip(name, {
@@ -90,10 +89,22 @@ function handleKeyEntered (key, [lat, lng], distance) {
   ).join('')}</ul>
     `)
   })
+
+  keysInRange[key] = {
+    distance,
+    lat,
+    lng,
+    marker,
+    handler
+  }
 }
 
 function handleKeyExited (key) {
-  keysInRange[key].marker.remove()
+  let { marker, handler } = keysInRange[key]
+
+  marker.remove()
+  filekeys.child(key).off('value', handler)
+
   delete keysInRange[key]
 }
 
