@@ -1,6 +1,10 @@
 @import 'node_modules/bulma/bulma.sass';
+ @import url('https://fonts.googleapis.com/css?family=Mukta+Malar');
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  font-family: 'Mukta Malar', sans-serif;
+}
 
 html {
   background-color: #CBE49F;
