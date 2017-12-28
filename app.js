@@ -64,7 +64,14 @@ function handleKeyEntered (key, [lat, lng], distance) {
     riseOnHover: true
   }).addTo(map)
 
-  let handler = filekeys.child(key).on('value', snap => {
+  keysInRange[key] = {
+    distance,
+    lat,
+    lng,
+    marker
+  }
+
+  keysInRange[key].handler = filekeys.child(key).on('value', snap => {
     let value = snap.val()
     if (!value) {
       handleKeyExited(key)
@@ -103,14 +110,6 @@ function handleKeyEntered (key, [lat, lng], distance) {
       attachPlainTextFilesPopup(marker, name, files)
     }
   })
-
-  keysInRange[key] = {
-    distance,
-    lat,
-    lng,
-    marker,
-    handler
-  }
 }
 
 document.querySelector('.leaflet-popup-pane')
@@ -122,7 +121,7 @@ function handlePasswordEntered (e) {
   let key = e.target.password.id.slice(2)
   let { marker, name, files } = keysInRange[key]
 
-  let password = e.target.password.value + SALT
+  let password = e.target.password.value + '~' + SALT + '~' + name
   let w = SimpleEncryptor(password)
 
   var decryptedfiles = {}
@@ -245,7 +244,9 @@ uploadForm.addEventListener('submit', e => {
     return
   }
 
-  let password = e.target.password.value.trim() + SALT
+  let name = e.target.nameField.value
+
+  let password = e.target.password.value.trim() + '~' + SALT + '~' + name
   if (password) {
     let w = SimpleEncryptor(password)
     var encryptedfiledata = {}
@@ -259,15 +260,15 @@ uploadForm.addEventListener('submit', e => {
   }
 
   let ref = filekeys.push({
-    name: e.target.name.value,
-    address: address.value,
+    name: name,
+    address: e.target.address.value,
     files: files,
     timestamp: Date.now() / 1000,
     encrypted: !!password
   }, () => {
-    e.target.name.value = ''
+    e.target.nameField.value = ''
     e.target.password.value = ''
-    address.value = ''
+    e.target.address.value = ''
     files = {}
     dz.removeAllFiles()
     resetTargetMarker()
@@ -326,18 +327,18 @@ map.on('click', e => {
   }
 })
 
-var address = document.getElementById('address')
+var addressField = document.getElementById('address')
 
 const geocoder = new google.maps.Geocoder()
 const updateTargetAddress = throttle(function ({lat, lng}) {
   geocoder.geocode({location: {lat, lng}}, (results, status) => {
     if (status === 'OK') {
       if (results[0]) {
-        address.value = results[0].formatted_address
+        addressField.value = results[0].formatted_address
         return
       }
     }
-    address.value = `lat: ${lat}, lng: ${lng}`
+    addressField.value = `lat: ${lat}, lng: ${lng}`
   })
 }, 700)
 
