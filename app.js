@@ -267,7 +267,7 @@ uploadForm.addEventListener('submit', e => {
     address.value = ''
     files = {}
     dz.removeAllFiles()
-    targetMarker.remove()
+    resetTargetMarker()
     targetPos = null
 
     notie.alert({
@@ -281,30 +281,46 @@ uploadForm.addEventListener('submit', e => {
 })
 
 var targetPos = null
-var targetMarker = {remove () {}}
+var targetMarker
+resetTargetMarker()
+function resetTargetMarker () {
+  targetMarker ? targetMarker.remove() : null
+  targetMarker = {
+    remove () {},
+    notYetSet: true
+  }
+}
 map.on('click', e => {
   let {lat, lng} = e.latlng
   targetPos = {lat, lng}
-
-  targetMarker.remove()
-  targetMarker = L.marker([lat, lng], {
-    draggable: true,
-    keyboard: false,
-    icon: L.icon.glyph({
-      prefix: 'fa',
-      glyph: 'cloud-upload',
-      glyphSize: '15px'
-    }),
-    riseOnHover: true
-  }).addTo(map)
-
-  targetMarker.bindTooltip('Your files will be added to this place', {
-    offset: [0, -17],
-    permanent: true,
-    opacity: 0.9
-  }).openTooltip()
-
   updateTargetAddress({lat, lng})
+
+  if (targetMarker.notYetSet) {
+    targetMarker = L.marker([lat, lng], {
+      draggable: true,
+      keyboard: false,
+      icon: L.icon.glyph({
+        prefix: 'fa',
+        glyph: 'cloud-upload',
+        glyphSize: '15px'
+      }),
+      riseOnHover: true
+    }).addTo(map)
+
+    targetMarker.bindTooltip('Your files will be added to this place', {
+      offset: [0, -17],
+      permanent: true,
+      opacity: 0.9
+    }).openTooltip()
+
+    targetMarker.on('move', throttle(function (e) {
+      let {lat, lng} = e.latlng
+      targetPos = {lat, lng}
+      updateTargetAddress({lat, lng})
+    }, 450))
+  } else {
+    targetMarker.setLatLng([lat, lng])
+  }
 })
 
 var address = document.getElementById('address')
