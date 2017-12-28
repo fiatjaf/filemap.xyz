@@ -139,7 +139,7 @@ function zoomToRadius (z) {
 
 
 var search = places({
-  container: document.querySelector('#search input')
+  container: document.getElementById('search')
 })
 
 search.on('change', e => {

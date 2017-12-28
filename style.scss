@@ -25,16 +25,12 @@ nav {
 }
 
 #search {
+  display: block;
   z-index: 7;
   margin-bottom: 23px;
-  text-align: center;
 
-  .button {
-    font-size: 1.5em;
-  }
-
-  & > .algolia-places {
-    width: 88%;
+  &.algolia-places {
+    width: 100%;
     height: 60px;
 
     & > * {
