@@ -1,4 +1,4 @@
-/* global L, notie, google, alert */
+/* global L, fetch, notie, google, alert */
 
 const firebase = require('firebase')
 const GeoFire = require('geofire')
@@ -29,9 +29,18 @@ var keysInRange = {}
 // MAP
 
 
-let lat = parseFloat(localStorage.getItem('lat') || 51.505)
-let lng = parseFloat(localStorage.getItem('lng') || -0.09)
-let zoom = parseInt(localStorage.getItem('zoom') || 14)
+var locationWasSet = false
+try {
+  let parsed = JSON.parse(localStorage.getItem('lat-lng-zoom'))
+  lat = parsed.lat
+  lng = parsed.lng
+  zoom = parsed.zoom
+  locationWasSet = true
+} catch (e) {
+  var lat = 51.505
+  var lng = -0.09
+  var zoom = 14
+}
 
 var map = L.map('map').setView([lat, lng], zoom)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -176,6 +185,16 @@ function handleKeyExited (key) {
 map.on('zoomend', handleMapMove)
 map.on('moveend', handleMapMove)
 
+if (!locationWasSet) {
+  fetch('https://freegeoip.net/json/')
+    .then(r => r.json())
+    .then(({latitude: lat, longitude: lng}) => {
+      map.setView([lat, lng], map.getZoom())
+      handleMapMove()
+    })
+    .catch(e => console.log('error on freegeoip call', e))
+}
+
 var circle = {remove () {}}
 circle.remove()
 
@@ -183,9 +202,7 @@ function handleMapMove () {
   let {lat, lng} = map.getCenter()
   let zoom = map.getZoom()
 
-  localStorage.setItem('lat', lat)
-  localStorage.setItem('lng', lng)
-  localStorage.setItem('zoom', zoom)
+  localStorage.setItem('lat-lng-zoom', JSON.stringify({lat, lng, zoom}))
 
   q.updateCriteria({
     center: [lat, lng],
@@ -220,11 +237,8 @@ var search = places({
 
 search.on('change', e => {
   let {lat, lng} = e.suggestion.latlng
-
   map.setView([lat, lng], map.getZoom())
-  q.updateCriteria({
-    center: [lat, lng]
-  })
+  handleMapMove()
 })
 
 
