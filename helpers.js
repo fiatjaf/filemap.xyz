@@ -63,4 +63,3 @@ module.exports.fileTypeIcon = function fileTypeIcon (filename) {
 
   return 'fa-file-o'
 }
-

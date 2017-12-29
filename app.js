@@ -1,4 +1,4 @@
-/* global L, fetch, notie, google, alert */
+/* global L, atob, btoa, fetch, notie, google, alert */
 
 const firebase = require('firebase')
 const GeoFire = require('geofire')
@@ -135,7 +135,7 @@ function handlePasswordEntered (e) {
 
   var decryptedfiles = {}
   for (let eenck in files) {
-    let enck = decodeURIComponent(eenck)
+    let enck = atob(eenck)
     try {
       let k = w.decrypt(enck)
       let v = w.decrypt(files[eenck])
@@ -167,7 +167,10 @@ function attachPlainTextFilesPopup (marker, name, files) {
     `<li>
       <i class="fa ${fileTypeIcon(files[key])}"></i>
       &nbsp;
-      <a href="https://file.io/${key}">${files[key]}</a>
+      <a
+        href="${atob(key).slice(0, 4) === 'http' ? atob(key) : 'https://file.io/' + key}"
+        target="_blank"
+      >${files[key]}</a>
      </li>`
   ).join('')}</ul>
   `)
@@ -249,7 +252,8 @@ let uploadForm = document.getElementById('upload')
 uploadForm.addEventListener('submit', e => {
   e.preventDefault()
 
-  let nfiles = Object.keys(files).length
+  let validLinks = links.filter(l => l.trim())
+  let nfiles = Object.keys(files).length + validLinks.length
   if (nfiles === 0) {
     notie.alert({
       type: 'info',
@@ -260,29 +264,52 @@ uploadForm.addEventListener('submit', e => {
 
   let name = e.target.nameField.value
 
+  var filesToSave = {}
+
   if (e.target.password.value.trim()) {
     let password = e.target.password.value + '~' + SALT + '~' + name
     let w = SimpleEncryptor(password)
+
     var encryptedfiledata = {}
     for (let k in files) {
       let enck = w.encrypt(k)
       let encv = w.encrypt(files[k])
-      let eenck = encodeURIComponent(enck)
+      let eenck = btoa(enck)
       encryptedfiledata[eenck] = encv
     }
-    files = encryptedfiledata
+
+    var encryptedlinkdata = {}
+    for (let i = 0; i < validLinks.length; i++) {
+      let encl = w.encrypt(validLinks[i])
+      let eencl = btoa(encl)
+      encryptedlinkdata[eencl] = encl
+    }
+
+    // files will be an object formed by files and links
+    filesToSave = encryptedfiledata.concat(encryptedlinkdata)
+  } else {
+    // complete the files object with the links
+    var linksObject = {}
+    for (let i = 0; i < validLinks.length; i++) {
+      let url = validLinks[i]
+      linksObject[btoa(url)] = url
+    }
+    filesToSave = Object.assign(files, linksObject)
   }
 
   let ref = filekeys.push({
     name: name,
     address: e.target.address.value,
-    files: files,
+    files: filesToSave,
     timestamp: Date.now() / 1000,
     encrypted: !!e.target.password.value.trim()
   }, () => {
     e.target.nameField.value = ''
     e.target.password.value = ''
     e.target.address.value = ''
+    linksContainer.innerHTML = ''
+    addNewLinkField()
+    links = []
     files = {}
     dz.removeAllFiles()
     resetTargetMarker()
@@ -377,6 +404,38 @@ dz.on('success', e => {
     dz.removeFile(e.upload)
   }
 })
+
+var links = []
+
+var linksContainer = document.getElementById('links')
+addNewLinkField()
+
+function addNewLinkField () {
+  let field = document.createElement('div')
+  field.className = 'control'
+  let input = document.createElement('input')
+  input.className = 'input'
+  input.dataset.index = links.length
+  links.push(input.value)
+  field.appendChild(input)
+
+  input.addEventListener('input', e => {
+    let currentIndex = parseInt(e.target.dataset.index)
+
+    if (e.target.value === '' && links.length > 1) {
+      linksContainer.removeChild(e.target.parentNode)
+      links.splice(currentIndex, 1)
+    } else {
+      links[currentIndex] = e.target.value
+
+      if (currentIndex === links.length - 1) {
+        addNewLinkField()
+      }
+    }
+  })
+
+  linksContainer.appendChild(field)
+}
 
 
 // MODAL

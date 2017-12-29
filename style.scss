@@ -83,7 +83,9 @@ nav {
 }
 
 #upload {
-
+  .dropzone {
+    min-height: none;
+  }
 }
 
 #save {
