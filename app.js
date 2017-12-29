@@ -260,8 +260,8 @@ uploadForm.addEventListener('submit', e => {
 
   let name = e.target.nameField.value
 
-  let password = e.target.password.value.trim() + '~' + SALT + '~' + name
-  if (password) {
+  if (e.target.password.value.trim()) {
+    let password = e.target.password.value + '~' + SALT + '~' + name
     let w = SimpleEncryptor(password)
     var encryptedfiledata = {}
     for (let k in files) {
@@ -278,7 +278,7 @@ uploadForm.addEventListener('submit', e => {
     address: e.target.address.value,
     files: files,
     timestamp: Date.now() / 1000,
-    encrypted: !!password
+    encrypted: !!e.target.password.value.trim()
   }, () => {
     e.target.nameField.value = ''
     e.target.password.value = ''
