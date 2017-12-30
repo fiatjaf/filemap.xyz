@@ -6,3 +6,4 @@ bower_components
 bundle.*
 elm.js
 browserify-cache.json
+Caddyfile
