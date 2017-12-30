@@ -198,9 +198,6 @@ if (!locationWasSet) {
     .catch(e => console.log('error on freegeoip call', e))
 }
 
-var circle = {remove () {}}
-circle.remove()
-
 function handleMapMove () {
   let {lat, lng} = map.getCenter()
   let zoom = map.getZoom()
@@ -211,15 +208,6 @@ function handleMapMove () {
     center: [lat, lng],
     radius: zoomToRadius(zoom)
   })
-
-  // debugging the radius
-  // circle.remove()
-  // circle = L.circle([lat, lng], {
-  //   color: 'red',
-  //   fillColor: '#f03',
-  //   fillOpacity: 0.3,
-  //   radius: zoomToRadius(zoom) * 1000
-  // }).addTo(map)
 
   if (!targetPos) {
     updateTargetAddress({lat, lng})
