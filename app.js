@@ -123,7 +123,15 @@ function handleKeyEntered (key, [lat, lng], distance) {
     } else {
       var unb64edfiles = {}
       for (let b64hashOrURL in files) {
-        let hashOrURL = atob(b64hashOrURL)
+        var hashOrURL
+
+        if (b64hashOrURL.slice(0, 2) === 'Qm') {
+          // ipfs hashes are not b64ed
+          hashOrURL = b64hashOrURL
+        } else {
+          // only URLs are
+          hashOrURL = atob(b64hashOrURL)
+        }
         unb64edfiles[hashOrURL] = files[b64hashOrURL]
       }
       attachPlainTextFilesPopup(marker, name, unb64edfiles)
@@ -145,7 +153,7 @@ function handlePasswordEntered (e) {
 
   var decryptedfiles = {}
   for (let b64enck in files) {
-    let enck = atob(b64enck)
+    let enck = atob(b64enck) // all encrypted hashes or URLs are b64ed
     try {
       let k = w.decrypt(enck)
       let v = w.decrypt(files[b64enck])
@@ -286,7 +294,7 @@ uploadForm.addEventListener('submit', e => {
     }
   } else {
     for (let k in files) {
-      filesToSave[btoa(k)] = files[k]
+      filesToSave[k] = files[k]
     }
 
     for (let i = 0; i < validLinks.length; i++) {
