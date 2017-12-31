@@ -1,17 +1,20 @@
 /* global L, atob, btoa, fetch, notie, google */
 
+const cuid = require('cuid')
 const firebase = require('firebase')
 const GeoFire = require('geofire')
 const places = require('places.js')
-const IPFS = require('ipfs')
-const toBuffer = require('blob-to-buffer')
 const throttle = require('throttleit')
 const SimpleEncryptor = require('simple-encryptor')
+const IPFSDropzone = require('ipfs-dropzone')
 const Dropzone = require('dropzone')
+IPFSDropzone.autoDiscover = false
 Dropzone.autoDiscover = false
 
 const { fileTypeIcon } = require('./helpers')
 const SALT = 'a stupid salt just to please the lib'
+
+var nextkey = cuid()
 
 firebase.initializeApp({
   apiKey: 'AIzaSyBMMiudi0y6Xnyy4UZW8l7y2RHvFKDjt1c',
@@ -118,7 +121,12 @@ function handleKeyEntered (key, [lat, lng], distance) {
   </form>
       `)
     } else {
-      attachPlainTextFilesPopup(marker, name, files)
+      var unb64edfiles = {}
+      for (let b64hashOrURL in files) {
+        let hashOrURL = atob(b64hashOrURL)
+        unb64edfiles[hashOrURL] = files[b64hashOrURL]
+      }
+      attachPlainTextFilesPopup(marker, name, unb64edfiles)
     }
   })
 }
@@ -136,11 +144,11 @@ function handlePasswordEntered (e) {
   let w = SimpleEncryptor(password)
 
   var decryptedfiles = {}
-  for (let eenck in files) {
-    let enck = atob(eenck)
+  for (let b64enck in files) {
+    let enck = atob(b64enck)
     try {
       let k = w.decrypt(enck)
-      let v = w.decrypt(files[eenck])
+      let v = w.decrypt(files[b64enck])
       decryptedfiles[k] = v
       if (!k || !v) {
         throw new Error(`couldn't decrypt ${enck} / ${files[enck]}.`)
@@ -165,17 +173,20 @@ function handlePasswordEntered (e) {
 function attachPlainTextFilesPopup (marker, name, files) {
   marker.bindPopup(`
   <h6 class="subtitle is-6">${name}</h6>
-  <ul>${Object.keys(files).map(key =>
-    `<li>
-      <i class="fa ${fileTypeIcon(files[key])}"></i>
-      &nbsp;
-      <a
-        href="${
-  atob(key).slice(0, 4) === 'http' ? atob(key) : 'https://ipfs.io/ipfs/' + key}"
-        target="_blank"
-      >${files[key]}</a>
+  <ul>${Object.keys(files)
+    .map(hashOrURL => [
+      files[hashOrURL],
+      hashOrURL.slice(0, 4) === 'http'
+        ? hashOrURL // it's an URL
+        : `https://ipfs.io/ipfs/${hashOrURL}/filemap.xyz/${files[hashOrURL]}` // it's a hash
+    ])
+    .map(([filename, link]) =>
+      `<li>
+        <i class="fa ${fileTypeIcon(filename)}"></i>
+        &nbsp;
+        <a href="${link}" target"_blank" >${filename}</a>
      </li>`
-  ).join('')}</ul>
+    ).join('')}</ul>
   `)
 }
 
@@ -261,40 +272,42 @@ uploadForm.addEventListener('submit', e => {
     let password = e.target.password.value + '~' + SALT + '~' + name
     let w = SimpleEncryptor(password)
 
-    var encryptedfiledata = {}
     for (let k in files) {
       let enck = w.encrypt(k)
       let encv = w.encrypt(files[k])
-      let eenck = btoa(enck)
-      encryptedfiledata[eenck] = encv
+      let b64enck = btoa(enck)
+      filesToSave[b64enck] = encv
     }
 
-    var encryptedlinkdata = {}
     for (let i = 0; i < validLinks.length; i++) {
       let encl = w.encrypt(validLinks[i])
-      let eencl = btoa(encl)
-      encryptedlinkdata[eencl] = encl
+      let b64encl = btoa(encl)
+      filesToSave[b64encl] = encl
+    }
+  } else {
+    for (let k in files) {
+      filesToSave[btoa(k)] = files[k]
     }
 
-    // files will be an object formed by files and links
-    filesToSave = encryptedfiledata.concat(encryptedlinkdata)
-  } else {
-    // complete the files object with the links
-    var linksObject = {}
     for (let i = 0; i < validLinks.length; i++) {
       let url = validLinks[i]
-      linksObject[btoa(url)] = url
+      filesToSave[btoa(url)] = url
     }
-    filesToSave = Object.assign(files, linksObject)
   }
 
-  let ref = filekeys.push({
+  filekeys.child(nextkey).update({
     name: name,
     address: e.target.address.value,
     files: filesToSave,
     timestamp: Date.now() / 1000,
     encrypted: !!e.target.password.value.trim()
   }, () => {
+    // set the point on the map with geofire
+    let {lat, lng} = targetPos || map.getCenter()
+    geofire.set(nextkey, [lat, lng])
+
+    // reset all values so people can upload brand new files to brand new places
+    nextkey = cuid()
     e.target.nameField.value = ''
     e.target.password.value = ''
     e.target.address.value = ''
@@ -311,9 +324,6 @@ uploadForm.addEventListener('submit', e => {
       text: `${nfiles} file${nfiles === 1 ? '' : 's'} saved!`
     })
   })
-
-  let {lat, lng} = targetPos || map.getCenter()
-  geofire.set(ref.key, [lat, lng])
 })
 
 var targetPos = null
@@ -376,72 +386,8 @@ const updateTargetAddress = throttle(function ({lat, lng}) {
 
 var files = {}
 
-class IPFSDropzone extends Dropzone {
-  constructor (el, options) {
-    options.url = 'https://ipfs.io/' // just to bypass the check.
-    super(el, options)
-
-    this.node = null
-  }
-
-  uploadFiles (files) {
-    if (this.node === null) {
-      this.node = new Promise((resolve) => {
-        let node = new IPFS({ repo: 'dz-ipfs' })
-        node.once('ready', () => {
-          resolve(node)
-        })
-      })
-    }
-
-    for (let file of files) {
-      this.emit('sending', file)
-    }
-
-    Promise.all([
-      this.node,
-      files,
-      Promise.all(
-        files.map(f =>
-          new Promise((resolve, reject) => {
-            toBuffer(f, (err, buf) => {
-              if (err) return reject(err)
-              resolve(buf)
-            })
-          })
-        )
-      )
-    ])
-      .then(([node, files, buffers]) => {
-        for (let i = 0; i < files.length; i++) {
-          let buf = buffers[i]
-          let file = files[i]
-
-          node.files.add(buf, {
-            progress: loaded => {
-              this._updateFilesUploadProgress([file], null, {
-                loaded: loaded,
-                total: file.size
-              })
-            }
-          }, (err, res) => {
-            let ipfsFile = res[0]
-            file.hash = ipfsFile.hash
-            file.path = ipfsFile.path
-
-            if (err) {
-              this._errorProcessing([file], `ipfs add error: ${err}`)
-              return
-            }
-
-            this._finished([file])
-          })
-        }
-      })
-  }
-}
-
 var dz = new IPFSDropzone('#files', {
+  ipfsPath: file => `${nextkey}/filemap.xyz/${file.name}`,
   addRemoveLinks: true,
   accept: (file, done) => {
     if (file.size > 50000000) {
@@ -452,7 +398,7 @@ var dz = new IPFSDropzone('#files', {
   }
 })
 dz.on('removedfile', file => {
-  delete files[file.hash]
+  delete files[file.ipfs.slice(-1)[0].hash]
 })
 dz.on('success', file => {
   console.log('published to IPFS:', file)
@@ -460,7 +406,7 @@ dz.on('success', file => {
     return
   }
 
-  files[file.hash] = file.name
+  files[file.ipfs.slice(-1)[0].hash] = file.name
 })
 dz.on('error', (file, message) => {
   console.error(message, file)
