@@ -186,7 +186,7 @@ function attachPlainTextFilesPopup (marker, name, files) {
       files[hashOrURL],
       hashOrURL.slice(0, 4) === 'http'
         ? hashOrURL // it's an URL
-        : `https://ipfs.io/ipfs/${hashOrURL}/filemap.xyz/${files[hashOrURL]}` // it's a hash
+        : `https://www.eternum.io/ipfs/${hashOrURL}/filemap.xyz/${files[hashOrURL]}` // it's a hash
     ])
     .map(([filename, link]) =>
       `<li>
@@ -303,35 +303,51 @@ uploadForm.addEventListener('submit', e => {
     }
   }
 
-  filekeys.child(nextkey).update({
+  filekeys.child(nextkey).set({
     name: name,
     address: e.target.address.value,
     files: filesToSave,
     timestamp: Date.now() / 1000,
     encrypted: !!e.target.password.value.trim()
-  }, () => {
-    // set the point on the map with geofire
-    let {lat, lng} = targetPos || map.getCenter()
-    geofire.set(nextkey, [lat, lng])
-
-    // reset all values so people can upload brand new files to brand new places
-    nextkey = cuid()
-    e.target.nameField.value = ''
-    e.target.password.value = ''
-    e.target.address.value = ''
-    linksContainer.innerHTML = ''
-    addNewLinkField()
-    links = []
-    files = {}
-    dz.removeAllFiles()
-    resetTargetMarker()
-    targetPos = null
-
-    notie.alert({
-      type: 'success',
-      text: `${nfiles} file${nfiles === 1 ? '' : 's'} saved!`
-    })
   })
+    .then(() => {
+      // set the point on the map with geofire
+      let {lat, lng} = targetPos || map.getCenter()
+      return geofire.set(nextkey, [lat, lng])
+    })
+    .then(() =>
+      Promise.all(
+        Object.keys(files).map(hash => {
+          fetch(`https://wt-fiatjaf-gmail_com-0.run.webtask.io/filemap-pin?hash=${hash}&name=${files[hash]}`)
+        })
+      )
+    )
+    .then(() => {
+      // reset all values so people can upload brand new files to brand new places
+      nextkey = cuid()
+      e.target.nameField.value = ''
+      e.target.password.value = ''
+      e.target.address.value = ''
+      linksContainer.innerHTML = ''
+      addNewLinkField()
+      links = []
+      files = {}
+      dz.removeAllFiles()
+      resetTargetMarker()
+      targetPos = null
+
+      notie.alert({
+        type: 'success',
+        text: `${nfiles} file${nfiles === 1 ? '' : 's'} saved!`
+      })
+    })
+    .catch(e => {
+      console.error('error saving files', filesToSave, e)
+      notie.alert({
+        type: 'error',
+        text: 'An error happened while saving you files.'
+      })
+    })
 })
 
 var targetPos = null
@@ -395,7 +411,7 @@ const updateTargetAddress = throttle(function ({lat, lng}) {
 var files = {}
 
 var dz = new IPFSDropzone('#files', {
-  ipfsPath: file => `${nextkey}/filemap.xyz/${file.name}`,
+  ipfsPath: file => `${nextkey}/filemap.xyz/${file.name.replace(/ /g, '-')}`,
   addRemoveLinks: true,
   accept: (file, done) => {
     if (file.size > 50000000) {
@@ -414,7 +430,7 @@ dz.on('success', file => {
     return
   }
 
-  files[file.ipfs.slice(-1)[0].hash] = file.name
+  files[file.ipfs.slice(-1)[0].hash] = file.name.replace(/ /g, '-')
 })
 dz.on('error', (file, message) => {
   console.error(message, file)

@@ -7,3 +7,5 @@ bundle.*
 elm.js
 browserify-cache.json
 Caddyfile
+.env
+credentials.json
