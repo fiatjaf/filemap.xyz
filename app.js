@@ -465,6 +465,7 @@ function addNewLinkField () {
   field.className = 'control'
   let input = document.createElement('input')
   input.className = 'input'
+  input.placeholder = 'optionally paste a link here'
   input.dataset.index = links.length
   links.push(input.value)
   field.appendChild(input)
