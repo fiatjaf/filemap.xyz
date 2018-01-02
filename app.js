@@ -192,7 +192,7 @@ function attachPlainTextFilesPopup (marker, name, files) {
       `<li>
         <i class="fa ${fileTypeIcon(filename)}"></i>
         &nbsp;
-        <a href="${link}" target"_blank" >${filename}</a>
+        <a href="${link}" target"_blank" rel="external" onclick="window.open(this.href); return false;">${filename}</a>
      </li>`
     ).join('')}</ul>
   `)
