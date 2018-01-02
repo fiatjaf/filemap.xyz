@@ -307,7 +307,7 @@ uploadForm.addEventListener('submit', e => {
     name: name,
     address: e.target.address.value,
     files: filesToSave,
-    timestamp: Date.now() / 1000,
+    timestamp: Date.now(),
     encrypted: !!e.target.password.value.trim()
   })
     .then(() => {
