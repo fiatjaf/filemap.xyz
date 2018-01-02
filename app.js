@@ -338,6 +338,7 @@ uploadForm.addEventListener('submit', e => {
       addNewLinkField()
       links = []
       files = {}
+      deletedUploads = {}
       dz.removeAllFiles()
       resetTargetMarker()
       targetPos = null
@@ -348,7 +349,7 @@ uploadForm.addEventListener('submit', e => {
       })
     })
     .catch(e => {
-      console.error('error saving files', filesToSave, e)
+      console.log('error saving files', filesToSave, e)
       notie.alert({
         type: 'error',
         text: 'An error happened while saving you files.'
@@ -415,6 +416,7 @@ const updateTargetAddress = throttle(function ({lat, lng}) {
 }, 700)
 
 var files = {}
+var deletedUploads = {}
 
 var dz = new IPFSDropzone('#files', {
   ipfsPath: file => `${nextkey}/filemap.xyz/${file.name.replace(/ /g, '-')}`,
@@ -428,18 +430,24 @@ var dz = new IPFSDropzone('#files', {
   }
 })
 dz.on('removedfile', file => {
-  delete files[file.ipfs.slice(-1)[0].hash]
+  if (file.ipfs) {
+    delete files[file.ipfs.slice(-1)[0].hash]
+  }
+  deletedUploads[file.upload.uuid] = true
 })
 dz.on('success', file => {
   console.log('published to IPFS:', file)
   if (file.size > 50000000) {
     return
   }
+  if (file.upload.uuid in deletedUploads) {
+    return
+  }
 
   files[file.ipfs.slice(-1)[0].hash] = file.name.replace(/ /g, '-')
 })
 dz.on('error', (file, message) => {
-  console.error(message, file)
+  console.warn('error', message, file)
   notie.alert({
     type: 'error',
     text: message
