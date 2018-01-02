@@ -17,11 +17,30 @@ module.exports = function (ctx, cb) {
 
       return fetch(`https://ipfs.io/ipfs/${ctx.data.hash}/filemap.xyz/${ctx.data.name}`)
         .then(r => {
-          console.log('fetched from ipfs.io', r.status, r.headers)
+          console.log('fetched from ipfs.io', r.status)
           return fetch(`https://www.eternum.io/ipfs/${ctx.data.hash}/filemap.xyz/${ctx.data.name}`)
         })
         .then(r => {
-          console.log('fetched from eternum.io', r.status, r.headers)
+          console.log('fetched from eternum.io', r.status)
+          return fetch(`https://www.eternum.io/api/pin/${ctx.data.hash}/?key=${ctx.secrets.eternum_key}`)
+        })
+        .then(r => r.json())
+        .then(pin => {
+          console.log('result from eternum api', pin)
+          if (pin.size === 0) {
+            console.log('trying to pin again by editing the label')
+            return fetch(`https://www.eternum.io/api/pin/${ctx.data.hash}/?key=${ctx.secrets.eternum_key}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                name: `filemap.xyz~${ctx.data.name}`
+              })
+            })
+          } else {
+            return Promise.resolve()
+          }
         })
         .catch(() => {
           console.log('failed to fetch from gateway')

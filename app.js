@@ -315,13 +315,19 @@ uploadForm.addEventListener('submit', e => {
       let {lat, lng} = targetPos || map.getCenter()
       return geofire.set(nextkey, [lat, lng])
     })
-    .then(() =>
-      Promise.all(
-        Object.keys(files).map(hash => {
+    .then(() => {
+      notie.alert({
+        type: 'info',
+        text: 'Pinning files on IPFS...',
+        stay: true
+      })
+
+      return Promise.all(
+        Object.keys(files).map(hash =>
           fetch(`https://wt-fiatjaf-gmail_com-0.run.webtask.io/filemap-pin?hash=${hash}&name=${files[hash]}`)
-        })
+        )
       )
-    )
+    })
     .then(() => {
       // reset all values so people can upload brand new files to brand new places
       nextkey = cuid()
