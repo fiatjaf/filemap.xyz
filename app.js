@@ -260,6 +260,7 @@ search.on('change', e => {
 
 let uploadForm = document.getElementById('upload')
 uploadForm.addEventListener('submit', e => {
+  if (typeof window.tc === 'function') window.tc(15)
   e.preventDefault()
 
   let validLinks = links.filter(l => l.trim())

@@ -5,7 +5,7 @@
     "watch-scss": "ls *.scss | entr fish -c 'node-sass --output-style compressed --source-map true style.scss > bundle.css; and echo 'done!''",
     "build-scss": "node-sass --output-style compressed --source-map true style.scss > bundle.css",
     "watch-js": "find -name \"*.js\" ! -name \"bundle.js\" ! -path \"*node_modules*\" | entr browserifyinc -vd app.js -o bundle.js",
-    "build-js": "browserify app.js -o -p tinyify bundle.js"
+    "build-js": "browserify app.js -p tinyify -o bundle.js"
   },
   "browserify": {
     "transforms": [
