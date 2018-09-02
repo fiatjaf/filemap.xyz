@@ -7,7 +7,3 @@ Imagine you want to send files to your grandfather, or you don't use Facebook an
 Solution:
   * Upload your files to https://filemap.xyz/ (you can either upload directly or share links to things already uploaded -- or even links to pages) and pin them to your grandfather's house address; then tell your grandfather to open https://filemap.xyz/ and look for his address. Done.
   * Tell your younger cousin to visit filemap.xyz and upload all the files to his address, later you open the site and look for his address. There are your files.
-
----
-
-Disclaimer: this is a cool piece of technology, it uses [IPFS](https://ipfs.io/)!

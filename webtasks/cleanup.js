@@ -3,6 +3,10 @@
 const fetch = require('isomorphic-fetch@2.2.0')
 const admin = require('firebase-admin@5.0.0')
 const b64 = require('base64-url')
+const gcs = require()
+
+const bucket = 'numeric-analogy-147613.appspot.com'
+const day = 1000 * 60 * 60 * 24
 
 module.exports = function (ctx, cb) {
   admin.initializeApp({
@@ -14,9 +18,12 @@ module.exports = function (ctx, cb) {
     databaseURL: 'https://numeric-analogy-147613.firebaseio.com'
   })
 
+  let now = Date.now()
+  let fourdaysago = now - 4 * day
+
   Promise.all([
-    unpinOldHashes(ctx),
-    unmapOldMarkers(ctx)
+    eraseOldFiles(ctx, fourdaysago),
+    unmapOldMarkers(ctx, fourdaysago)
   ])
     .then(res => {
       cb(null, res)
@@ -26,12 +33,8 @@ module.exports = function (ctx, cb) {
     })
 }
 
-const day = 1000 * 60 * 60 * 24
-
-function unmapOldMarkers () {
+function unmapOldMarkers (ctx, fourdaysago) {
   let db = admin.database()
-  let now = Date.now()
-  let fourdaysago = now - (4 * day)
 
   let q = db.ref('/files')
     .orderByChild('timestamp')
@@ -56,24 +59,15 @@ function unmapOldMarkers () {
   })
 }
 
-function unpinOldHashes (ctx) {
-  let now = Date.now()
-  let fourdaysago = now - (4 * day)
+function eraseOldFiles(upto) {
+  let bucket = gcs.bucket(bucket)
 
-  return fetch(`https://www.eternum.io/api/pin/?key=${ctx.secrets.eternum_key}`)
-    .then(r => r.json())
-    .then(res =>
-      Promise.all(
-        res.results.map(pin => {
-          let added = new Date(pin.added)
-          if (pin.name.split('~')[0] === 'filemap.xyz' && added.getTime() < fourdaysago) {
-            return fetch(`https://www.eternum.io/api/pin/${pin.hash}?key=${ctx.secrets.eternum_key}`, {method: 'DELETE'})
-              .then(r => r.json())
-              .then(res => console.log('unpinned', pin, res))
-              .catch(err => console.log('failed to unpin', pin, err))
-          }
-        })
-      )
-    )
-    .catch(err => console.log('failed to fetch pins from eternum', err))
+  bucket.getFiles({}, (err, files) => {
+    if (err) throw err
+
+    for (let i = 0; i < files.length; i++) {
+      let file = files[i]
+      console.log(file)
+    }
+  })
 }

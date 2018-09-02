@@ -1,0 +1,33 @@
+{
+  "rules": {
+    "files": {
+      ".read": true,
+      "$key": {
+        ".write": "!data.exists()",
+        ".indexOn": [
+          "timestamp"
+        ],
+        ".validate": "newData.hasChildren(['files', 'name', 'address', 'timestamp'])"
+      }
+    },
+    "hashes": {
+      ".read": true,
+      "$key": {
+        ".write": "root.child('files').hasChild($key)",
+        "$hash": {
+          ".validate": "$hash.beginsWith('Qm')"
+        }
+      }
+    },
+    "geo": {
+      ".read": true,
+      "$key": {
+        ".write": "!data.exists()",
+        ".indexOn": [
+          "g"
+        ],
+        ".validate": "newData.hasChildren(['g', 'l'])"
+      }
+    }
+  }
+}

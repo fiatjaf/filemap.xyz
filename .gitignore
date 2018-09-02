@@ -1,3 +1,4 @@
+*.log
 *.swp
 *.swo
 node_modules
@@ -9,3 +10,6 @@ browserify-cache.json
 Caddyfile
 .env
 credentials.json
+dart-sass
+_site
+.firebase/hosting*

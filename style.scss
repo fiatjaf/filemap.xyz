@@ -1,3 +1,5 @@
+/** @format */
+
 $size-1: 3.7rem;
 $size-2: 3rem;
 $size-3: 2.5rem;
@@ -19,17 +21,17 @@ $size-7: 1rem;
 }
 
 li {
-  a, i {
+  a,
+  i {
     font-size: 140%;
   }
 }
 
 html {
-  background-color: #CBE49F;
+  background-color: #cbe49f;
 }
 
 nav {
-
 }
 
 #modal {
@@ -80,12 +82,9 @@ nav {
 #files {
   width: 100%;
   border-color: #dbdbdb;
-}
-
-#upload {
-  .dropzone {
-    min-height: 0;
-  }
+  min-height: 0;
+  height: auto;
+  display: block;
 }
 
 #save {
@@ -109,5 +108,5 @@ body > footer {
 }
 
 .notie-alert {
-  z-index: 10;
+  z-index: 9999;
 }

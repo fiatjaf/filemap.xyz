@@ -1,6 +1,9 @@
-let mimeTypes = require('render-media/lib/mime.json')
+/** @format */
 
-module.exports.fileTypeIcon = function fileTypeIcon (filename) {
+const Plugin = require('@uppy/core/lib/Plugin.js')
+const mimeTypes = require('render-media/lib/mime.json')
+
+module.exports.fileTypeIcon = function fileTypeIcon(filename) {
   let splitted = filename.split('.')
   let ext = splitted.slice(-1)[0]
   if (!ext || splitted[0] === '') return 'fa-file'
@@ -62,4 +65,72 @@ module.exports.fileTypeIcon = function fileTypeIcon (filename) {
   }
 
   return 'fa-file-o'
+}
+
+module.exports.FirebaseCloudStorage = class FirebaseCloudStorage extends Plugin {
+  constructor(uppy, opts) {
+    super(uppy, opts)
+    if (!opts.storageRef) {
+      throw Error(
+        'Please provide the root storageRef to be used as option `storageRef`. See https://firebase.google.com/docs/storage/web/upload-files'
+      )
+    }
+    this.type = 'uploader'
+    this.id = 'FirebaseCloudStorage'
+    this.title = 'Firebase Cloud Storage'
+    this.storageRef = opts.storageRef
+    this.uploadFile = this.uploadFile.bind(this)
+  }
+
+  uploadFile(fileIds) {
+    return Promise.all(
+      fileIds.map(id => {
+        return new Promise((resolve, reject) => {
+          let file = this.uppy.getFile(id)
+          let path = `${new Date().toISOString().split('T')[0]}/${file.name}`
+          let fileRef = this.storageRef.child(path)
+          this.uppy.emit('upload-started', file)
+          let uploadTask = fileRef.put(file.data, {
+            contentType: file.type
+          })
+          uploadTask.on(
+            'state_changed',
+            snapshot => {
+              let progressInfo = {
+                uploader: this,
+                bytesUploaded: snapshot.bytesTransferred,
+                bytesTotal: snapshot.totalBytes
+              }
+              this.uppy.emit('upload-progress', file, progressInfo)
+            },
+            error => {
+              this.uppy.emit('upload-error', file, error)
+              reject(error)
+            },
+            () => {
+              uploadTask.snapshot.ref.getDownloadURL().then(downloadUrl => {
+                let file = this.uppy.getFile(id)
+                file.downloadUrl = downloadUrl
+                this.uppy.emit(
+                  'upload-success',
+                  file,
+                  uploadTask.snapshot,
+                  downloadUrl
+                )
+                resolve()
+              })
+            }
+          )
+        })
+      })
+    )
+  }
+
+  install() {
+    this.uppy.addUploader(this.uploadFile)
+  }
+
+  uninstall() {
+    this.uppy.removeUploader(this.uploadFile)
+  }
 }
